@@ -118,8 +118,6 @@ def draw_convex_combination_2d(points, cc_points):
 
     # Drawing contour of the figure (with plt.plot).
     plt.plot(cc_points[0], cc_points[1], 'ro')
-    # plt.plot([x[0] for x in cc_points], [x[1] for x in cc_points], 'ro')
-    # plt.plot(cc_points[:, 0], cc_points[:, 1], 'ro')
     draw_contour_2d(points)
 
 
@@ -134,6 +132,8 @@ def draw_convex_combination_3d(points, cc_points, sides=None, color_z=True):
     # TODO: Zadanie 4.3: Zaimplementuj rysowanie wykresu 3D dla cc_points. Możesz dodatkowo zaimplementować kolorowanie względem wartości na osi z.
 
     # Drawing contour of the figure (with plt.plot).
+    ax.scatter(cc_points[0], cc_points[1], cc_points[2], c=cc_points[2])
+    # ax.plot3D(cc_points[0], cc_points[1], cc_points[2], 'ro')
     if sides is not None:
         draw_contour_3d(points, sides)
 
