@@ -52,8 +52,6 @@ def convex_comb_general(points, limit=1.0, step_arange=0.1, tabs=""):
     """
     # TODO: Zadanie 4.2: Rekurencyjna implementacja (albo zupełnie własna, rekurencja to propozycja).
     points = np.array(points)
-    x = points[:, 0]
-    y = points[:, 1]
     
     num_of_points = 10
     def add_at_position(elements, value, position):
@@ -64,34 +62,35 @@ def convex_comb_general(points, limit=1.0, step_arange=0.1, tabs=""):
         return (*elements[:position], value, *elements[position:])
 
     def generate_coefficients(elements, number_of_elements):
-        fill = np.arange(0, limit+1e-10, step=step_arange)
+        fill = np.arange(0, limit+1e-10, step=step_arange) # add small value to limit to include limit in the range
+        
         if len(elements) == 1:
             return np.reshape(fill, (len(fill), 1))
         
-        permutations = generate_coefficients(elements[1:], number_of_elements)
-        tmp = set()
+        # get all permutations of the list smaller by 1 element
+        permutations = generate_coefficients(elements[1:], number_of_elements) 
+        
+        tmp = []
         for permutation in permutations:
-            for element in fill:
-                for i in range(len(permutation)+1):
-                    permu = add_at_position(permutation, element, i)
-                    if permu in tmp:
-                        continue
-                    s = np.sum(permu)
-                    l = len(permu)
-                    if (l < number_of_elements and s < 1) or (l == number_of_elements and np.isclose(s, 1.0)):
-                        # add point if 
-                        tmp.add(permu)
+            if len(permutation) == number_of_elements-1:
+                # add last element by subtracting sum of existing elements in the permutation from 1.0
+                tmp.append(add_at_position(permutation, 1.0-np.sum(permutation), len(permutation)))
+            else:
+                for element in fill:
+                    # add each possible value at the end if the sum is not bigger than 1.0
+                    if np.sum(permutation) + element <= 1.0:
+                        permu = add_at_position(permutation, element, len(permutation))
+                        tmp.append(permu) 
+
         return tmp
 
     
     # get all coefficients for convex combinations
-    _points = np.array([x for x in generate_coefficients(np.zeros((len(points), )), len(points)) if np.isclose(np.sum(x), 1.0)])
+    lambdas = np.array(generate_coefficients(np.zeros((len(points), )), len(points)))
 
-    # get coordinates of convex combinations
-    _x = _points@x
-    _y = _points@y
+    result = np.matmul(points.T, lambdas.T)
 
-    return _x, _y
+    return result
 
 
 def convex_comb_triangle_loop(points):
