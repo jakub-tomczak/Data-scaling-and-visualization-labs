@@ -78,7 +78,7 @@ def convex_comb_general(points, limit=1.0, step_arange=0.1, tabs=""):
             else:
                 for element in fill:
                     # add each possible value at the end if the sum is not bigger than 1.0
-                    if np.sum(permutation) + element <= 1.0:
+                    if np.sum(permutation) + element <= 1.0+1e-3:
                         permu = add_at_position(permutation, element, len(permutation))
                         tmp.append(permu) 
 
