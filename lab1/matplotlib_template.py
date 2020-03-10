@@ -149,10 +149,17 @@ def draw_vector_addition(vectors, coeffs):
 
     # Drawing the final vector being a linear combination of the given vectors.
     # The third and the fourth arguments of the plt.arrow function indicate movement (dx, dy), not the ending point.
+    # def create_vector_from_combination(point_1, point_2, coeffs, last_point):
+
+    vectors = np.array(vectors)
+    _vectors = (vectors.T*coeffs).T
+    start_point = np.zeros((2, ))
+    for i in range(len(_vectors)):
+        plt.arrow(start_point[0], start_point[1], _vectors[i, 0], _vectors[i, 1], head_width=.1, head_length=.1, color='green', zorder=4, length_includes_head=True)
+        start_point += _vectors[i]
     resultant_vector = sum([c * v for c, v in zip(coeffs, vectors)])
     plt.arrow(0.0, 0.0, resultant_vector[0], resultant_vector[1], head_width=0.1, head_length=0.1, color="magenta", zorder=4, length_includes_head=True)
     plt.margins(0.05)
-
 
 
 def draw_triangle_simple_1():
