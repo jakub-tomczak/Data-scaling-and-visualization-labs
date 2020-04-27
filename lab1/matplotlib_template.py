@@ -52,7 +52,7 @@ def convex_comb_general(points, limit=1.0, step_arange=0.1, tabs=""):
     """
     # TODO: Zadanie 4.2: Rekurencyjna implementacja (albo zupełnie własna, rekurencja to propozycja).
     points = np.array(points)
-    
+
     num_of_points = 10
     def add_at_position(elements, value, position):
         if position == 0:
@@ -63,13 +63,13 @@ def convex_comb_general(points, limit=1.0, step_arange=0.1, tabs=""):
 
     def generate_coefficients(elements, number_of_elements):
         fill = np.arange(0, limit+1e-10, step=step_arange) # add small value to limit to include limit in the range
-        
+
         if len(elements) == 1:
             return np.reshape(fill, (len(fill), 1))
-        
+
         # get all permutations of the list smaller by 1 element
-        permutations = generate_coefficients(elements[1:], number_of_elements) 
-        
+        permutations = generate_coefficients(elements[1:], number_of_elements)
+
         tmp = []
         for permutation in permutations:
             if len(permutation) == number_of_elements-1:
@@ -80,11 +80,11 @@ def convex_comb_general(points, limit=1.0, step_arange=0.1, tabs=""):
                     # add each possible value at the end if the sum is not bigger than 1.0
                     if np.sum(permutation) + element <= 1.0+1e-3:
                         permu = add_at_position(permutation, element, len(permutation))
-                        tmp.append(permu) 
+                        tmp.append(permu)
 
         return tmp
 
-    
+
     # get all coefficients for convex combinations
     lambdas = np.array(generate_coefficients(np.zeros((len(points), )), len(points)))
 
@@ -103,7 +103,7 @@ def convex_comb_triangle_loop(points):
     # TODO: Zadanie 4.1: Implementacja za pomocą pętli obliczenia wypukłych kombinacji liniowych dla wierzchołków trójkąta.
     num_of_points = 10
     coefficients = np.linspace(0, 1, num_of_points)
-    
+
     _points = np.zeros(shape=(num_of_points**2, 2))
     for i, x in enumerate(coefficients):
         comb_point = convex_combination(points[1], points[2], x)
