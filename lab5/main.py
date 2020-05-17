@@ -48,7 +48,7 @@ def draw_plot(method_data: Tuple[Any, np.ndarray], dataset_name: str, data_label
                 axis.annotate(xy=(data[ann_index, 0], data[ann_index, 1]), s=annotation)
         
         plt.suptitle(dataset_name)
-        plt.savefig(f'data/{method}.png')
+        plt.savefig(f'data/{dataset_name}.png')
 
     plt.show()
 
