@@ -12,7 +12,8 @@ from scipy.spatial.distance import cdist
 
 
 # for running outside this file's dir
-BASE_PATH='lab5'
+# if empty - assumes running from the same dir
+BASE_PATH=''
 
 def centering_matrix(n):
     return np.identity(n) - 1 / n * np.ones(n)
@@ -95,7 +96,7 @@ if __name__ == "__main__":
         # "MDS classic (sklearn), PCA": PCA(n_components=2),
         "Isomap (k=3)": Isomap(n_neighbors=3, n_components=2, n_jobs=1),
         "Isomap (k=5)": Isomap(n_neighbors=5, n_components=2, n_jobs=1),
-        "TSNE": TSNE(n_components=2, n_jobs=1),
+        "TSNE (lr=200)": TSNE(n_components=2, n_jobs=1),
         "TSNE (lr=50)": TSNE(n_components=2, learning_rate=50, n_jobs=1),
         "LLE (k=3)": LLE(n_neighbors=3),
         "LLE (k=5)": LLE(n_neighbors=5),
