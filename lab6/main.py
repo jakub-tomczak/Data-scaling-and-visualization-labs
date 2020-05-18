@@ -39,10 +39,35 @@ class ScikitTransformer(SVDTransformer):
         self.method = TruncatedSVD(
             n_components=self.n_components
         )
-    
+    def _transform_one_layer(self, layer_data):
+        k = self.n_components
+        # print(np.min(layer_data), np.max(layer_data))
+        u, s, vh = np.linalg.svd(layer_data)
+        # print(u.shape, s.shape, vh.shape)
+        u_ = u[:, :k]
+        s_ = np.eye(k)*s[:k]
+        vh_ = vh[:k, :]
+        # print(u_.shape, s_.shape, vh_.shape)
+        transformed = (u_ @ s_ @vh_)
+        # print(np.min(transformed), np.max(transformed))
+        return np.clip(transformed, 0, 1)
+
     def _transform(self, image):
-        # _ = self.method.transform(image) # expects that image is an array with shapes (n_samples, n_features)
-        return image
+        if self.n_components < 1:
+            return image
+        
+        min_dim = np.min(image.shape[:2])
+        if self.n_components > min_dim:
+            print('n_components > min(m,n), setting n_components to', min_dim)
+            self.n_components = min_dim
+        
+        
+        if len(image.shape) > 2:
+            return np.stack(
+                [self._transform_one_layer(image[:, :, i]) for i in range(len(image.shape))],
+                axis=-1)
+        else:
+            return self._transform_one_layer(image)
         
     def __repr__(self):
         return 'scikit svd'
