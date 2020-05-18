@@ -63,7 +63,7 @@ def pca_manual(data, n_comp=None):
 
     # TODO: 4) Sort eigenvalues (and their corresponding eigenvectors) in the descending order (e.g. by using argsort),
     #          and construct the matrix K with eigenvectors in the columns.
-    sorted_eig_values_indices = np.argsort(np.abs(eig_val))[:n_comp:][::-1]
+    sorted_eig_values_indices = np.argsort(np.abs(eig_val))[::-1][:n_comp]
     sorted_eig_values, K = eig_val[sorted_eig_values_indices], eig_vec[:, sorted_eig_values_indices]
     logging.info("\nSORTED EIGEN VALUES")
     logging.info(sorted_eig_values)
