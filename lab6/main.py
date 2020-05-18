@@ -17,6 +17,8 @@ class SVDTransformer:
 
     def transform(self, image: np.ndarray):
         print(f'Metoda: {self}\nParametry:\n\tn_components {self.n_components}')
+        if self.n_components < 1:
+            return image
         return self._transform(image)
     
     @abstractclassmethod
@@ -53,15 +55,6 @@ class ScikitTransformer(SVDTransformer):
         return np.clip(transformed, 0, 1)
 
     def _transform(self, image):
-        if self.n_components < 1:
-            return image
-        
-        min_dim = np.min(image.shape[:2])
-        if self.n_components > min_dim:
-            print('n_components > min(m,n), setting n_components to', min_dim)
-            self.n_components = min_dim
-        
-        
         if len(image.shape) > 2:
             return np.stack(
                 [self._transform_one_layer(image[:, :, i]) for i in range(len(image.shape))],
@@ -105,15 +98,16 @@ def display_image(data: np.ndarray):
     io.imshow(data)
     plt.show()
 
-def compare_images(orig_data: np.ndarray, transformed_data: np.ndarray):
+def compare_images(orig_data: np.ndarray, transformed_data: np.ndarray, n_components: int, method: SVDTransformer):
     fig = plt.figure(figsize=(16, 8))
+    plt.suptitle(f'Metoda {method}, liczba składowych: {n_components}')
 
     axis = plt.subplot(1, 2, 1)
-    axis.set_title('Original image')
+    axis.set_title('Oryginalne zdjęcie')
     axis.imshow(orig_data)
 
     axis = plt.subplot(1, 2, 2)
-    axis.set_title('Transformed image')
+    axis.set_title('Zdjęcie po kompresji')
     axis.imshow(transformed_data)
     plt.show()
 
@@ -134,6 +128,13 @@ def parse_args():
 
 
 def main(args):
+    image = read_image(args.input_filename, to_float=True)
+    
+    min_dim = np.min(image.shape[:2])
+    if args.n_components > min_dim:
+        print('n_components > min(m,n), zmiana n_components na', min_dim)
+        args.n_components = min_dim
+
     # keeps methods and their constructor's parameters
     methods = {
         'custom': (CustomSVDTransformer, {
@@ -151,14 +152,13 @@ def main(args):
     method_class, method_params = methods[args.method_name]
     method = method_class(**method_params)
 
-    image = read_image(args.input_filename, to_float=True)
-
+    # SVD decomposition
     transformed = transform_image(image, method)
 
     if args.output_filename is not None:
         save_image(transformed, args.output_filename)
     else:
-        compare_images(image, transformed)
+        compare_images(image, transformed, args.n_components, method)
         # display_image(transformed)
 
 if __name__=="__main__":
