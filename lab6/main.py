@@ -105,6 +105,18 @@ def display_image(data: np.ndarray):
     io.imshow(data)
     plt.show()
 
+def compare_images(orig_data: np.ndarray, transformed_data: np.ndarray):
+    fig = plt.figure(figsize=(16, 8))
+
+    axis = plt.subplot(1, 2, 1)
+    axis.set_title('Original image')
+    axis.imshow(orig_data)
+
+    axis = plt.subplot(1, 2, 2)
+    axis.set_title('Transformed image')
+    axis.imshow(transformed_data)
+    plt.show()
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -146,7 +158,8 @@ def main(args):
     if args.output_filename is not None:
         save_image(transformed, args.output_filename)
     else:
-        display_image(transformed)
+        compare_images(image, transformed)
+        # display_image(transformed)
 
 if __name__=="__main__":
     args = parse_args()
