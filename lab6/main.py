@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 import os
 from abc import abstractclassmethod
 
+
+BASE_PATH=''
+IMAGES_PATH=''
+
 class SVDTransformer:
     def __init__(self, n_components: int):
         self.n_components = n_components
@@ -52,11 +56,12 @@ def transform_image(image: np.ndarray, method_obj: Any):
     return method_obj.transform(image)
 
 def read_image(image_filename: str, to_float=True):
-    if not os.path.exists(image_filename):
-        print(f"Nie odnaleziono pliku {image_filename}")
+    fullpath = os.path.join(BASE_PATH, IMAGES_PATH, image_filename)
+    if not os.path.exists(fullpath):
+        print(f"Nie odnaleziono pliku {fullpath}")
         exit(1)
-    print(f'Czytanie pliku z {image_filename}')
-    data = io.imread(image_filename)
+    print(f'Czytanie pliku z {fullpath}')
+    data = io.imread(fullpath)
     # convert from 0-255 to 0.0-1.0
     if to_float:
         data = data.astype('float64')
@@ -66,12 +71,12 @@ def read_image(image_filename: str, to_float=True):
 
 
 def save_image(data: np.ndarray, image_filename: str):
-    print(f'Zapisywanie pliku do {image_filename}')
+    fullpath = os.path.join(BASE_PATH, image_filename)
+    print(f'Zapisywanie pliku do {fullpath}')
     data = (data * 255).astype('uint8')
-    io.imsave(image_filename, data)
+    io.imsave(fullpath, data)
 
 def display_image(data: np.ndarray):
-    print('displaying image')
     io.imshow(data)
     plt.show()
 
