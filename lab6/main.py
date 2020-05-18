@@ -33,7 +33,7 @@ class CustomSVDTransformer(SVDTransformer):
     def __repr__(self):
         return 'custom svd'
 
-class SklearnTransformer(SVDTransformer):
+class ScikitTransformer(SVDTransformer):
     def __init__(self, n_components):
         super().__init__(n_components)
         self.method = TruncatedSVD(
@@ -45,7 +45,7 @@ class SklearnTransformer(SVDTransformer):
         return image
         
     def __repr__(self):
-        return 'sklearn svd'
+        return 'scikit svd'
 
 def transform_image(image: np.ndarray, method_obj: Any):
     '''
@@ -102,7 +102,7 @@ def main(args):
         'custom': (CustomSVDTransformer, {
             'n_components': args.n_components
         }),
-        'scikit': (SklearnTransformer, {
+        'scikit': (ScikitTransformer, {
             'n_components': args.n_components
         })
     }
