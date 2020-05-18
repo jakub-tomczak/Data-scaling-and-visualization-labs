@@ -128,8 +128,8 @@ Wnioski:
         - dla swiss roll:
         - dla facebook:
     - czas działania:
-        SMACOF działa wolno
+        SMACOF działa najwolniej, TSNE jest odstający od reszty ale i tak znacznie szybszy od smacof
         reszta podobny czas
-    -
+    - 
     
 '''
