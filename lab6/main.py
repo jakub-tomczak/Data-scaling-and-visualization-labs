@@ -8,7 +8,7 @@ import os
 from abc import abstractclassmethod
 
 
-BASE_PATH=''
+BASE_PATH='lab6'
 IMAGES_PATH=''
 
 class SVDTransformer:
@@ -83,7 +83,7 @@ def display_image(data: np.ndarray):
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-f', type=str, dest="input_filename", help='plik z oryginalnym obrazkiem')
+    parser.add_argument('-f', type=str, dest="input_filename", required=True, help='plik z oryginalnym obrazkiem')
     parser.add_argument('-out', type=str, default=None, dest="output_filename",
         help='nazwa pliku wyjściowego, do którego zapisany ma być skompresowany obrazek. Brak wartości spowoduje wyświetlenie.')
     parser.add_argument('-svd', type=str, default='custom', dest="method_name",
