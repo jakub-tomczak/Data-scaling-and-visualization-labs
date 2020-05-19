@@ -19,18 +19,65 @@ class SVDTransformer:
         print(f'Metoda: {self}\nParametry:\n\tn_components {self.n_components}')
         if self.n_components < 1:
             return image
-        return self._transform(image)
+
+        if len(image.shape) > 2:
+            return np.stack(
+                [self._transform(image[:, :, i]) for i in range(len(image.shape))],
+                axis=-1)
+        else:
+            return self._transform(image)
     
     @abstractclassmethod
     def _transform(self, image: np.ndarray):
+        '''
+        Transforms one layer of an image.
+        '''
         pass
 
 class CustomSVDTransformer(SVDTransformer):
     def __init__(self, n_components):
         super().__init__(n_components)
-    
-    def _transform(self, image):
-        return image
+
+    def _evd_decomposition(self, data):
+        eig_val, eig_vec = np.linalg.eig(data)
+        sorted_eig_values_indices = np.argsort(np.abs(eig_val))[::-1]
+        # L = np.eye(len(eig_val)) * eig_val
+        L = eig_val[sorted_eig_values_indices]
+        K = eig_vec[sorted_eig_values_indices]
+        K_inverted = np.real(np.linalg.inv(K))
+        return np.real(K_inverted), np.real(L), np.real(K)
+
+    def _svd_decomposition(self, data):
+        C = data.T @ data # columns covariance
+        R = data @ data.T # rows covariance
+        # print('C shape is ', C.shape, 'R shape is', R.shape)
+        V, L_v, V_t = self._evd_decomposition(C)
+        U, L_u, U_t = self._evd_decomposition(R)
+
+
+        # C_R_difference = np.abs(np.subtract(*data.shape))
+        n, m = data.shape
+        # print(n, m, C.shape, L_v.shape, L_u.shape)
+        sigma = (L_v[:n] if m < n else L_u[:m]) ** .5
+        # print(U.shape, sigma.shape, V.shape)
+        # sigma_offset_fill = np.zeros((C_R_difference, sigma.shape[1]))
+        # print(sigma.shape, sigma_offset_fill.shape)
+        # sigma = np.vstack([sigma, sigma_offset_fill])
+
+        return U, sigma, V
+
+    def _transform(self, data):
+        k = self.n_components
+        # print(np.min(data), np.max(data))
+        u, s, vh = self._svd_decomposition(data)
+        # print(u.shape, s.shape, vh.shape)
+        u_ = u[:, :k]
+        s_ = np.eye(k)*s[:k]
+        vh_ = vh[:k, :]
+        # print(u_.shape, s_.shape, vh_.shape)
+        transformed = (u_ @ s_ @vh_)
+        # print(np.min(transformed), np.max(transformed))
+        return np.clip(transformed, 0, 1)
 
     def __repr__(self):
         return 'custom svd'
@@ -41,10 +88,11 @@ class ScikitTransformer(SVDTransformer):
         self.method = TruncatedSVD(
             n_components=self.n_components
         )
-    def _transform_one_layer(self, layer_data):
+
+    def _transform(self, data):
         k = self.n_components
-        # print(np.min(layer_data), np.max(layer_data))
-        u, s, vh = np.linalg.svd(layer_data)
+        # print(np.min(data), np.max(data))
+        u, s, vh = np.linalg.svd(data)
         # print(u.shape, s.shape, vh.shape)
         u_ = u[:, :k]
         s_ = np.eye(k)*s[:k]
@@ -53,14 +101,6 @@ class ScikitTransformer(SVDTransformer):
         transformed = (u_ @ s_ @vh_)
         # print(np.min(transformed), np.max(transformed))
         return np.clip(transformed, 0, 1)
-
-    def _transform(self, image):
-        if len(image.shape) > 2:
-            return np.stack(
-                [self._transform_one_layer(image[:, :, i]) for i in range(len(image.shape))],
-                axis=-1)
-        else:
-            return self._transform_one_layer(image)
         
     def __repr__(self):
         return 'scikit svd'
