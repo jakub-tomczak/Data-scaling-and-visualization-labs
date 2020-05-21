@@ -8,7 +8,7 @@ import os
 from abc import abstractclassmethod
 
 
-BASE_PATH='lab6'
+BASE_PATH=''
 IMAGES_PATH=''
 
 class SVDTransformer:
