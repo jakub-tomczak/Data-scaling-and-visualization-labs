@@ -39,7 +39,7 @@ class CustomSVDTransformer(SVDTransformer):
         super().__init__(n_components)
 
     def _evd_decomposition(self, data):
-        eig_val, eig_vec = np.linalg.eigh(data)
+        eig_val, eig_vec = np.linalg.eig(data)
         sorted_eig_values_indices = np.argsort(eig_val)[::-1]
         L = eig_val[sorted_eig_values_indices]
         K = eig_vec[:, sorted_eig_values_indices]
@@ -54,7 +54,7 @@ class CustomSVDTransformer(SVDTransformer):
         V, L_v, _ = self._evd_decomposition(C)
 
         # sigma jest wektorem wartości własnych - tym który był dłuższy z C lub R
-        sigma = np.power(L_v if C.shape[0] > R.shape[0] else L_u, .5)
+        sigma = np.sqrt(L_v if C.shape[0] > R.shape[0] else L_u)
         
         return U, sigma, V.T
 
