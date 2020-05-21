@@ -16,7 +16,7 @@ class SVDTransformer:
         self.n_components = n_components
 
     def transform(self, image: np.ndarray):
-        print(f'Metoda: {self}\nParametry:\n\tn_components {self.n_components}')
+        print(f'Metoda: {self}\nParametry:\n\tn_components {self.n_components}\n\twymiar {image.shape}')
         if self.n_components < 1:
             return image
 
@@ -39,45 +39,39 @@ class CustomSVDTransformer(SVDTransformer):
         super().__init__(n_components)
 
     def _evd_decomposition(self, data):
-        eig_val, eig_vec = np.linalg.eig(data)
-        sorted_eig_values_indices = np.argsort(np.abs(eig_val))[::-1]
-        # L = np.eye(len(eig_val)) * eig_val
+        eig_val, eig_vec = np.linalg.eigh(data)
+        sorted_eig_values_indices = np.argsort(eig_val)[::-1]
         L = eig_val[sorted_eig_values_indices]
-        K = eig_vec[sorted_eig_values_indices]
-        K_inverted = np.real(np.linalg.inv(K))
-        return np.real(K_inverted), np.real(L), np.real(K)
+        K = eig_vec[:, sorted_eig_values_indices]
+        # K_inverted = np.real(np.linalg.inv(K))
+        return K, L, None
 
     def _svd_decomposition(self, data):
-        C = data.T @ data # columns covariance
-        R = data @ data.T # rows covariance
-        # print('C shape is ', C.shape, 'R shape is', R.shape)
-        V, L_v, V_t = self._evd_decomposition(C)
-        U, L_u, U_t = self._evd_decomposition(R)
+        C = data.T @ data # columns covariance (m, m)
+        R = data @ data.T # rows covariance (n, n)
+        
+        U, L_u, _ = self._evd_decomposition(R)
+        V, L_v, _ = self._evd_decomposition(C)
 
-
-        # C_R_difference = np.abs(np.subtract(*data.shape))
-        n, m = data.shape
-        # print(n, m, C.shape, L_v.shape, L_u.shape)
-        sigma = (L_v[:n] if m < n else L_u[:m]) ** .5
-        # print(U.shape, sigma.shape, V.shape)
-        # sigma_offset_fill = np.zeros((C_R_difference, sigma.shape[1]))
-        # print(sigma.shape, sigma_offset_fill.shape)
-        # sigma = np.vstack([sigma, sigma_offset_fill])
-
-        return U, sigma, V
+        # sigma jest wektorem wartości własnych - tym który był dłuższy z C lub R
+        sigma = np.power(L_v if C.shape[0] > R.shape[0] else L_u, .5)
+        
+        return U, sigma, V.T
 
     def _transform(self, data):
+        n, m = data.shape
         k = self.n_components
-        # print(np.min(data), np.max(data))
-        u, s, vh = self._svd_decomposition(data)
-        # print(u.shape, s.shape, vh.shape)
+        u, s, v_t = self._svd_decomposition(data)
+
         u_ = u[:, :k]
-        s_ = np.eye(k)*s[:k]
-        vh_ = vh[:k, :]
-        # print(u_.shape, s_.shape, vh_.shape)
-        transformed = (u_ @ s_ @vh_)
-        # print(np.min(transformed), np.max(transformed))
-        return np.clip(transformed, 0, 1)
+        v_t_ = v_t[:k, :]
+
+        # dostosuj rozmiar sigmy do rozmiarów u_ oraz v_t_        
+        s_ = np.diag(s)[:u_.shape[1], :v_t_.shape[0]]
+        
+        # print(u_[:10, :4], s_[:10, :4], v_t_[:10, :4], sep='\n')
+        
+        return np.real(u_ @ s_ @v_t_)
 
     def __repr__(self):
         return 'custom svd'
@@ -91,16 +85,21 @@ class ScikitTransformer(SVDTransformer):
 
     def _transform(self, data):
         k = self.n_components
-        # print(np.min(data), np.max(data))
-        u, s, vh = np.linalg.svd(data)
-        # print(u.shape, s.shape, vh.shape)
+        r, c = data.shape
+        u, s, v_t = np.linalg.svd(data)
+        
+        # weź k wektorów własnych
         u_ = u[:, :k]
-        s_ = np.eye(k)*s[:k]
-        vh_ = vh[:k, :]
-        # print(u_.shape, s_.shape, vh_.shape)
-        transformed = (u_ @ s_ @vh_)
-        # print(np.min(transformed), np.max(transformed))
-        return np.clip(transformed, 0, 1)
+        v_t_ = v_t[:k, :]
+        
+        # stwórz macierz sigma tak by odpowiadała rozmiarom macierzy u_ oraz v_t_
+        
+        s_ = np.zeros((u_.shape[1], v_t_.shape[0]))
+        s_len = s[:k].shape[0]
+        s_[:s_len, :s_len] = np.diag(s[:k])
+        
+        # print(u_[:10, :4], s_[:10, :4], v_t_[:10, :4], sep='\n')
+        return u_ @ s_ @ v_t_
         
     def __repr__(self):
         return 'scikit svd'
@@ -170,10 +169,12 @@ def parse_args():
 def main(args):
     image = read_image(args.input_filename, to_float=True)
     
+    # image = image[: 5,: 4, :]
     min_dim = np.min(image.shape[:2])
     if args.n_components > min_dim:
         print('n_components > min(m,n), zmiana n_components na', min_dim)
         args.n_components = min_dim
+
 
     # keeps methods and their constructor's parameters
     methods = {
@@ -192,8 +193,9 @@ def main(args):
     method_class, method_params = methods[args.method_name]
     method = method_class(**method_params)
 
+    min_, max_ = np.min(image), np.max(image)
     # SVD decomposition
-    transformed = transform_image(image, method)
+    transformed = np.clip(transform_image(image, method), min_, max_)
 
     if args.output_filename is not None:
         save_image(transformed, args.output_filename)
@@ -201,6 +203,38 @@ def main(args):
         compare_images(image, transformed, args.n_components, method)
         # display_image(transformed)
 
+def test_custom_svd():
+    m = np.array([
+        [1, 2, 3, 4],
+        [5, 6, 7, 8]
+    ])
+
+    m = np.random.rand(8, 6)
+
+    # m = np.array([
+    #     [1, 0, 0, 0, 2],
+    #     [0, 0, 3, 0, 0],
+    #     [0, 0, 0, 0, 0],
+    #     [0, 4, 0, 0, 0]
+    # ])
+
+
+    custom_method = CustomSVDTransformer(n_components=np.min(m.shape)+1)
+    scikit_method = ScikitTransformer(n_components=np.min(m.shape)+1)
+    
+    transformed_custom = transform_image(m, custom_method)
+    transformed_scikit = transform_image(m, scikit_method)
+
+    print('custom\n', transformed_custom)
+    print('sickit\n', transformed_scikit)
+
+    # check different sizes    
+    m = m.T
+    transformed_custom = transform_image(m, custom_method)
+    transformed_scikit = transform_image(m, scikit_method)
+
+
 if __name__=="__main__":
+    # test_custom_svd()
     args = parse_args()
     main(args)
