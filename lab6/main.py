@@ -41,7 +41,7 @@ class CustomSVDTransformer(SVDTransformer):
     def _evd_decomposition(self, data):
         eig_val, eig_vec = np.linalg.eig(data)
         sorted_eig_values_indices = np.argsort(eig_val)[::-1]
-        L = eig_val[sorted_eig_values_indices]
+        L = eig_val[sorted_eig_values_indices].astype('complex')
         K = eig_vec[:, sorted_eig_values_indices]
         K_inverted = np.linalg.inv(K)
         return K, np.diag(L), K_inverted
