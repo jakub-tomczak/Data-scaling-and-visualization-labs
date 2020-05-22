@@ -43,20 +43,34 @@ class CustomSVDTransformer(SVDTransformer):
         sorted_eig_values_indices = np.argsort(eig_val)[::-1]
         L = eig_val[sorted_eig_values_indices]
         K = eig_vec[:, sorted_eig_values_indices]
-        # K_inverted = np.real(np.linalg.inv(K))
-        return K, L, None
+        K_inverted = np.linalg.inv(K)
+        return K, np.diag(L), K_inverted
 
     def _svd_decomposition(self, data):
+        rows, columns = data.shape
+
+        # funkcja która zwraca macierz kwadratowy wycinek podanej macierzy
+        square_slice = lambda arr: arr[:np.min(arr.shape), :np.min(arr.shape)]
+
         C = data.T @ data # columns covariance (m, m)
         R = data @ data.T # rows covariance (n, n)
         
         U, L_u, _ = self._evd_decomposition(R)
-        V, L_v, _ = self._evd_decomposition(C)
+        V, L_v, V_t = self._evd_decomposition(C)
 
-        # sigma jest wektorem wartości własnych - tym który był dłuższy z C lub R
+        # bierzemy krótszy z wektorów wartości własnych
         sigma = np.sqrt(L_v if C.shape[0] > R.shape[0] else L_u)
+        sigma = sigma[:rows, :columns]
+        sigma_inv = np.linalg.pinv(square_slice(sigma))
+
+        if rows > columns:
+            U = np.zeros((rows, rows))
+            U[:,:columns] = data @ V @ sigma_inv
+        else:
+            V_t = np.zeros((columns, columns))
+            V_t[:rows,:] = sigma_inv @ U.T @ data
         
-        return U, sigma, V.T
+        return U, sigma, V_t
 
     def _transform(self, data):
         n, m = data.shape
@@ -66,10 +80,9 @@ class CustomSVDTransformer(SVDTransformer):
         u_ = u[:, :k]
         v_t_ = v_t[:k, :]
 
-        # dostosuj rozmiar sigmy do rozmiarów u_ oraz v_t_        
-        s_ = np.diag(s)[:u_.shape[1], :v_t_.shape[0]]
-        
-        # print(u_[:10, :4], s_[:10, :4], v_t_[:10, :4], sep='\n')
+        # dostosuj rozmiar sigmy do rozmiarów u_ oraz v_t_,
+        # s_ będzie miało rozmiar k x k
+        s_ = s[:u_.shape[1], :v_t_.shape[0]]
         
         return np.real(u_ @ s_ @v_t_)
 
@@ -168,8 +181,7 @@ def parse_args():
 
 def main(args):
     image = read_image(args.input_filename, to_float=True)
-    
-    # image = image[: 5,: 4, :]
+
     min_dim = np.min(image.shape[:2])
     if args.n_components > min_dim:
         print('n_components > min(m,n), zmiana n_components na', min_dim)
