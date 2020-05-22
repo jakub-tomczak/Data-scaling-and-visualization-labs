@@ -64,34 +64,24 @@ class CustomSVDTransformer(SVDTransformer):
             sigma_inv = np.real(sigma_inv)
             return sigma, sigma_inv
 
-        if rows > columns:
-            C = data.T @ data # columns covariance (m, m)
-            V, L_v, V_t = self._evd_decomposition(C)
+        R = data @ data.T # rows covariance (n, n)
+        U, L_u, _ = self._evd_decomposition(R)
 
-            sigma, sigma_inv = create_sigma(L_v)
+        sigma, sigma_inv = create_sigma(L_u)
 
-            U = np.zeros((rows, rows))
-            # A = U*sigma*V.T / * prawostronnie przez (V.T)^(-1) * sigma^(-1)
-            # A * (V.T)^(-1) * sigma^(-1) = U
-            # V = (V.T)^(-1), bo V jest ortogonalna, więc ostatecznie
-            # A * V * sigma^(-1) = U
-            U[:,:columns] = data @ V @ sigma_inv
-        else:
-            R = data @ data.T # rows covariance (n, n)
-            U, L_u, _ = self._evd_decomposition(R)
-
-            sigma, sigma_inv = create_sigma(L_u)
-
-            V_t = np.zeros((columns, columns))
-            # A = U*sigma*V.T / * lewostronnie przez sigma^(-1) * U^(-1)
-            # sigma^(-1) * U^(-1) A  = U
-            # sigma^(-1) * U.T * A  = U
-            V_t[:rows,:] = sigma_inv @ U.T @ data
+        V_t = np.zeros((columns, columns))
+        # A = U*sigma*V.T / * lewostronnie przez sigma^(-1) * U^(-1)
+        # sigma^(-1) * U^(-1) A  = U
+        # sigma^(-1) * U.T * A  = U
+        V_t[:rows,:] = sigma_inv @ U.T @ data
 
         return U, sigma, V_t
 
     def _transform(self, data):
         n, m = data.shape
+        if n > m:
+            data = data.T
+        
         k = self.n_components
         u, s, v_t = self._svd_decomposition(data)
 
@@ -102,7 +92,11 @@ class CustomSVDTransformer(SVDTransformer):
         # s_ będzie miało rozmiar k x k
         s_ = s[:u_.shape[1], :v_t_.shape[0]]
         
-        return np.real(u_ @ s_ @v_t_)
+        result = np.real(u_ @ s_ @v_t_)
+        if n > m:
+            result = result.T
+
+        return result
 
     def __repr__(self):
         return 'custom svd'
