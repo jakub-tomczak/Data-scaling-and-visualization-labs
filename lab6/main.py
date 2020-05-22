@@ -52,24 +52,42 @@ class CustomSVDTransformer(SVDTransformer):
         # funkcja która zwraca macierz kwadratowy wycinek podanej macierzy
         square_slice = lambda arr: arr[:np.min(arr.shape), :np.min(arr.shape)]
 
-        C = data.T @ data # columns covariance (m, m)
-        R = data @ data.T # rows covariance (n, n)
-        
-        U, L_u, _ = self._evd_decomposition(R)
-        V, L_v, V_t = self._evd_decomposition(C)
-
-        # bierzemy krótszy z wektorów wartości własnych
-        sigma = np.sqrt(L_v if C.shape[0] > R.shape[0] else L_u)
-        sigma = sigma[:rows, :columns]
-        sigma_inv = np.linalg.pinv(square_slice(sigma))
+        def create_sigma(eigen_values):
+            # bierzemy krótszy z wektorów wartości własnych
+            sigma = np.zeros((rows, columns))
+            num_eig_val = eigen_values.shape[0]
+            sigma[:num_eig_val, :num_eig_val] = np.sqrt(eigen_values)
+            # oblicz pseudo odwrotną macierz sigma
+            sigma_inv = np.linalg.pinv(square_slice(sigma))
+            # ponownie rzutuj sigma na liczby rzeczywiste
+            sigma = np.real(sigma)
+            sigma_inv = np.real(sigma_inv)
+            return sigma, sigma_inv
 
         if rows > columns:
+            C = data.T @ data # columns covariance (m, m)
+            V, L_v, V_t = self._evd_decomposition(C)
+
+            sigma, sigma_inv = create_sigma(L_v)
+
             U = np.zeros((rows, rows))
+            # A = U*sigma*V.T / * prawostronnie przez (V.T)^(-1) * sigma^(-1)
+            # A * (V.T)^(-1) * sigma^(-1) = U
+            # V = (V.T)^(-1), bo V jest ortogonalna, więc ostatecznie
+            # A * V * sigma^(-1) = U
             U[:,:columns] = data @ V @ sigma_inv
         else:
+            R = data @ data.T # rows covariance (n, n)
+            U, L_u, _ = self._evd_decomposition(R)
+
+            sigma, sigma_inv = create_sigma(L_u)
+
             V_t = np.zeros((columns, columns))
+            # A = U*sigma*V.T / * lewostronnie przez sigma^(-1) * U^(-1)
+            # sigma^(-1) * U^(-1) A  = U
+            # sigma^(-1) * U.T * A  = U
             V_t[:rows,:] = sigma_inv @ U.T @ data
-        
+
         return U, sigma, V_t
 
     def _transform(self, data):
